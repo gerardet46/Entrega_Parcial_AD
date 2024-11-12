@@ -1,0 +1,86 @@
+---
+title: "títol entrega"
+subtitle: "Anàlisi de Dades. Repàs 1er parcial"
+author: "Gerard Ribas Acebes"
+date: today
+format:
+  html:
+    theme: darkly #lumen
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(MASS)
+```
+
+# Resum
+
+# Plantejament del problema
+
+# Anàlisi descriptiva
+
+### Simulació de dades
+```{r}
+mitj <- c(6.5, 450, 185, 770)
+covariances <- matrix(c( 4,  54,  24,    60,
+                        54, 900, 270,   600,
+                        24, 270, 225,   600,
+                        60, 600, 600, 10000), nrow = 4)
+                        
+set.seed(13112024)
+n <- 150
+dades_quant <- mvrnorm(n, mu = mitj, Sigma = covariances)
+dades_quant[,1] <- pmin(pmax(round(dades_quant[,1], 1), 2.5), 12.5)
+dades_quant[,2] <- pmin(pmax(round(dades_quant[,2]), 2.5), 12.5)
+dades_quant[,3] <- pmin(pmax(round(dades_quant[,3]), 130), 250)
+dades_quant[,4] <- pmax(round(dades_quant[,4], 2), 200)
+
+veles <- data.frame(
+    m2       = round(dades_quant[,1], 1),
+    gratil   = round(dades_quant[,2]),
+    botavara = round(dades_quant[,3]),
+    preu     = round(dades_quant[,4], 2),
+    gama     = ordered(sample(1:3, 150, replace = TRUE), labels = c("Baixa", "Mitjana", "Alta")),
+    politges = ordered(sample(1:3, 150, replace = TRUE), labels = c(2,3,4)),
+    reforç   = ordered(sample(1:3, 150, replace = TRUE), labels = c("Cap", "Finestra", "Vela")),
+    material = ordered(sample(1:2, 150, replace = TRUE), labels = c("PVC", "Monofilm")),
+    marca    = ordered(sample(1:3, 150, replace = TRUE), labels = c("Neil Pryde", "Gaastra", "North"))
+)
+```
+
+# Anàlisi inferencial
+### Multinomial (reforç)
+Calculem la probabilitat que en una mostra de 20 veles hagi més veles reforçades completament que només de finestra, i més de finestra que no reforçades.
+```{r}
+freq <- table(as.data.frame(veles[,7]))
+prop <- freq / n
+```
+
+```{r}
+# Amb simulacions
+nsim <- 3000
+set.seed(1714)
+sim <- rmultinom(nsim, 20, estimadors)
+sum((sim[1,] <= sim[2,]) & (sim[2,] <= sim[3,])) / nsim
+```
+
+```{r}
+# Sumant totes les probabilitats
+# tots els possibles vectors (x1,x2,x3) tq x1 <= x2 <= x3
+probabilitat <- 0
+for (cap in seq(0,10)) {
+  for (finestra in seq(cap, 20 - cap)) {
+    vela <- 20 - finestra - cap
+    if (vela >= finestra)
+      probabilitat <- probabilitat + dmultinom(c(cap, finestra, vela), 20, prob = prop)
+  }
+}
+```
+
+# Conclusions
+
+# Bibliografia
