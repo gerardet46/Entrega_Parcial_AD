@@ -12,9 +12,11 @@ format:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = T, warning = FALSE, message = FALSE)
 library(tidyverse)
 library(MASS)
+library(Hotelling)
+library(GGally)
 ```
 
 # Resum
@@ -22,7 +24,6 @@ library(MASS)
 # Plantejament del problema
 
 # Anàlisi descriptiva
-
 ### Simulació de dades
 ```{r}
 mitj <- c(6.5, 450, 185, 770)
@@ -50,6 +51,11 @@ veles <- data.frame(
     material = ordered(sample(1:2, 150, replace = TRUE), labels = c("PVC", "Monofilm")),
     marca    = ordered(sample(1:3, 150, replace = TRUE), labels = c("Neil Pryde", "Gaastra", "North"))
 )
+```
+
+### Matriu de gràfics de dispersió
+```{r}
+ggpairs(veles %>% dplyr::select(c(1:4, 8)), aes(colour = material, alpha = 0.8))
 ```
 
 # Anàlisi inferencial
@@ -102,6 +108,38 @@ ggplot(data_lm, aes(x=x, y=y)) +
   geom_point() +
   geom_smooth(method=lm , color="red", se=FALSE)
 ```
+
+### Contrast d'hipòtesi de dues mitjanes multivariants
+```{r}
+X1 <- veles %>% filter(material == "Monofilm") %>% dplyr::select(1:4)
+X2 <- veles %>% filter(material == "PVC")      %>% dplyr::select(1:4)
+```
+
+Amb `hotelling.test`
+```{r}
+fit <- hotelling.test(X1, X2, var.equal = T)
+fit
+```
+
+Manualment
+```{r}
+p  <- 4
+n1 <- nrow(X1)
+n2 <- nrow(X2)
+
+mu1 <- colMeans(X1)
+mu2 <- colMeans(X2)
+mu_diff <- matrix(mu1-mu2, ncol = 1)
+
+factor <- (n1+n2-1-p) / ((n1+n2-2)*p) * (n1*n2) / (n1+n2)
+S      <- (n1*cov(X1) + n2*cov(X2)) / (n1+n2-2)
+Sinv   <- solve(S)
+
+estadisticF <- factor * (t(mu_diff) %*% Sinv %*% mu_diff)
+1-pf(estadisticF, p, n1+n2-1-p)
+```
+
+aquest estadistic segueix una F de Fisher amb (p, n1+n2-1-p) graus de lliberat.
 
 # Conclusions
 
