@@ -35,7 +35,7 @@ set.seed(13112024)
 n <- 150
 dades_quant <- mvrnorm(n, mu = mitj, Sigma = covariances)
 dades_quant[,1] <- pmin(pmax(round(dades_quant[,1], 1), 2.5), 12.5)
-dades_quant[,2] <- pmin(pmax(round(dades_quant[,2]), 2.5), 12.5)
+dades_quant[,2] <- pmin(pmax(round(dades_quant[,2]), 300), 500)
 dades_quant[,3] <- pmin(pmax(round(dades_quant[,3]), 130), 250)
 dades_quant[,4] <- pmax(round(dades_quant[,4], 2), 200)
 
@@ -64,7 +64,7 @@ prop <- freq / n
 # Amb simulacions
 nsim <- 3000
 set.seed(1714)
-sim <- rmultinom(nsim, 20, estimadors)
+sim <- rmultinom(nsim, 20, prop)
 sum((sim[1,] <= sim[2,]) & (sim[2,] <= sim[3,])) / nsim
 ```
 
@@ -79,6 +79,28 @@ for (cap in seq(0,10)) {
       probabilitat <- probabilitat + dmultinom(c(cap, finestra, vela), 20, prob = prop)
   }
 }
+
+# la variable `probabilitat` és aproximandament el que ens ha donat abans amb les simulacions
+```
+
+### Regressió múltiple
+```{r}
+summary(lm(preu ~ m2+gratil+botavara, data = veles))
+```
+
+```{r}
+summary(lm(preu ~ gratil+botavara, data = veles))
+```
+
+```{r}
+summary(lm(preu ~ botavara, data = veles))
+```
+
+```{r}
+data_lm <- data.frame(x = veles$botavara, y = veles$preu)
+ggplot(data_lm, aes(x=x, y=y)) +
+  geom_point() +
+  geom_smooth(method=lm , color="red", se=FALSE)
 ```
 
 # Conclusions
