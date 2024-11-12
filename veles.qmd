@@ -9,6 +9,7 @@ format:
     toc: true
     toc-depth: 3
     embed-resources: true
+lang: ca
 ---
 
 ```{r setup, include=FALSE}
@@ -25,6 +26,7 @@ library(GGally)
 
 # Anàlisi descriptiva
 ### Simulació de dades
+En primer lloc, anem a simular les dades. Agafarem una mostra de 150 observacions de nou variables diferents: quatre quantitatives, tres ordinals i dues nominals.
 ```{r}
 mitj <- c(6.5, 450, 185, 770)
 covariances <- matrix(c( 4,  54,  24,    60,
@@ -51,45 +53,79 @@ veles <- data.frame(
     material = ordered(sample(1:2, 150, replace = TRUE), labels = c("PVC", "Monofilm")),
     marca    = ordered(sample(1:3, 150, replace = TRUE), labels = c("Neil Pryde", "Gaastra", "North"))
 )
+veles %>% glimpse
 ```
+El significat de cadascuna de les variables és el següent:
+
+- `m2`: la superfície de la vela en metres quadrats. Té mitjana 6.5m², desviació típica 2m² i pren tots els valors entre 2.5m² i 12.5m² amb un decimal de precisió.
+- `gratil`: la longitud del gràtil en centímetres, és a dir, la longitud des de la part inferior fins la superior. Té mitjana 450cm, desviació típica 30cm i pren valors enters entre 300cm i 500cm.
+- `botavara`: la longitud de la botavara, és a dir, l'amplada. Té mitjana 185cm, desviació típica 15cm i pren valors enters entre 130cm i 250cm.
+- `preu`: el preu de la vela en euros. Pot prendre qualsevol valor (arrodonit a dos decimals) a partir de 200, essent la mitjana un preu de 770€ i desviació típica 100€.
+- `politges`: el nombre de politges que disposa al peu de la vela per tensar-la. Les veles tenen entre 2 i 4 politges. És una variable ordinal.
+- `reforç`: indica el nivell de reforç de la vela. Pot ser `Cap` (sense reforç), `Finestra` (amb reforç només a la finestra de la vela) i `Vela` (vela completament reforçada). La finestra de la vela és una franja horitzontal situada a l'alçada de la botavara. És una variable ordinal, idò indica el nivell de reforçament de la vela.
+- `material`: poden estar fabricades amb PVC o amb Monofilm. És clarament nominal.
+- `marca`: restringim l'estudi a només tres marques (de les més utilitzades en el mercat). Tenim *Neil Pryde*, *Gaastra* i *North*. Òbviament es tracta d'una variable nominal.
+
+Cal remarcar que podria semblar que la superfície queda completament determinada pel gràtil i la botavara. Emperò, no és veritat, ja que depèn de la forma de la vela. Anàlogament, l'alçada de la vela no ens revela la botavara ni viceversa: hi ha veles més estretes que altres. Això sí, aquestes tres variables estan molt correlacionades dues a dues, idò major superfície implica major alçada i botavara.
+
+El preu no és tan clar. Com més grossa és la vela més cara és, però hi ha altres factors a tenir en compte com el tipus de vela, el material, la marca i el reforç.
+
+A la simulació, s'han procurat ajustar les covariances per simular el comportament dit abans. Això sí, per simplicitat, la simulació de les variables no quantitatives sí que ha estat completament independent.
 
 ### Matriu de gràfics de dispersió
+A continuació, mostram un gràfic de dispersió de les variables quantitatives junt amb el material de fabricació, per tal de mostrar un resum de les dades utilitzades.
+
 ```{r}
 ggpairs(veles %>% dplyr::select(c(1:4, 8)), aes(colour = material, alpha = 0.8))
 ```
 
+Com es pot apreciar, les variables de superfície, gràtil i botavara estan molt correlacionades. També ho estan amb el preu però no massa (al voltant de 0.3). A més, tots els coeficients són significatius, és a dir, podem inferir les correlacions a la població total. També són significatius i molt parescuts en cada grup (*PVC* i *Monofilm*) (això és a causa de la simulació independent de les variables no quantitatives). De fet, entre els dos grups obtenim distribucions molt parescudes.
+
+Les correlacions es poden apreciar també en els gràfics de dispersió: les parelles superfície-gràtil-botavara estan més correlacionades i es veu una dispersió més lineal, mentre que amb el preu no passa. També es pot apreciar que les variables quantitatives presenten densitats clarament normals amb les mitjanes que hem imposat a la simulació.
+
 # Anàlisi inferencial
-### Multinomial (reforç)
-Calculem la probabilitat que en una mostra de 20 veles hagi més veles reforçades completament que només de finestra, i més de finestra que no reforçades.
+### El reforçament com una multinomial
+Seleccionam la variable `reforç` del conjunt de dades i la modelam amb una multinomial. El reforçament és un factor important a tenir en compte per al preu de la vela, idò implica afegir a sobre de la vela un trençat addicional. A més, en certes modalitats de windsurf (com el *freestyle*) és clau el reforçament de la vela per garantir major durabilitat, mentre que en altres modalitats no és tan important. És a dir, és un factor molt important a l'hora de comprar una vela.
+
+Per començar, calcularem els estimadors de màxima versemblança de les proporcions; que sabem que són les proporcions mostrals.
 ```{r}
 freq <- table(as.data.frame(veles[,7]))
 prop <- freq / n
+prop
 ```
 
+Així, en una mostra de la variable ens dona un vector indicant el nombre de veles sense reforç, amb reforç només a la finestra i reforçada totalment, en aquest ordre.
+
+Ara, ens interessa la probabilitat que en una mostra de 20 veles hagi més veles reforçades completament que només la finestra, i alhora que hagi més veles amb només la finestra reforçada que no reforçades. Això ens pot ser d'utilitat, per exemple, per saber si en el mercat hi ha molta més oferta de veles reforçades que no reforçades.
+
+Procedirem de dues maneres. La primera, simulant mostres aleatòries de la multinomial i comprovant a quantes se compleix la condició desitaja
 ```{r}
-# Amb simulacions
 nsim <- 3000
 set.seed(1714)
 sim <- rmultinom(nsim, 20, prop)
+# cap reforç <= reforç finestra <= reforç total
 sum((sim[1,] <= sim[2,]) & (sim[2,] <= sim[3,])) / nsim
 ```
 
+Ara, podem calcular-ho també a mà amb la fórmula exacte. Això és, la probabilitat que es doni una mostra fixada per totes les mostres d'interès (i.e. que compleixin la condició donada), i sumant totes les possibilitats
 ```{r}
 # Sumant totes les probabilitats
 # tots els possibles vectors (x1,x2,x3) tq x1 <= x2 <= x3
 probabilitat <- 0
+# iteram tots els possibles valors
 for (cap in seq(0,10)) {
   for (finestra in seq(cap, 20 - cap)) {
     vela <- 20 - finestra - cap
-    if (vela >= finestra)
+    if (vela >= finestra)  # comprovam que volguem ponderar aquesta probabilitat
       probabilitat <- probabilitat + dmultinom(c(cap, finestra, vela), 20, prob = prop)
   }
 }
-
-# la variable `probabilitat` és aproximandament el que ens ha donat abans amb les simulacions
+probabilitat
 ```
 
-### Regressió múltiple
+En ambdós casos les probabilitats són molt properes. En conclusió, els windsurfistes de *freestyle* es decepcionaran, idò no tendran tantes veles reforçades totalment en proporció a les reforçades només a la finestra i en proporció a les que no tenen reforç.
+
+### Regressió múltiple per explicar el preu
 ```{r}
 summary(lm(preu ~ m2+gratil+botavara, data = veles))
 ```
@@ -109,7 +145,7 @@ ggplot(data_lm, aes(x=x, y=y)) +
   geom_smooth(method=lm , color="red", se=FALSE)
 ```
 
-### Contrast d'hipòtesi de dues mitjanes multivariants
+### Contrast d'hipòtesi de dues mitjanes multivariants (en funció del material de fabricació)
 ```{r}
 X1 <- veles %>% filter(material == "Monofilm") %>% dplyr::select(1:4)
 X2 <- veles %>% filter(material == "PVC")      %>% dplyr::select(1:4)
@@ -132,7 +168,8 @@ mu2 <- colMeans(X2)
 mu_diff <- matrix(mu1-mu2, ncol = 1)
 
 factor <- (n1+n2-1-p) / ((n1+n2-2)*p) * (n1*n2) / (n1+n2)
-S      <- (n1*cov(X1) + n2*cov(X2)) / (n1+n2-2)
+# cov ens dona no esbiaixat, hem de multiplicar per ni-1 i no per ni
+S      <- ((n1-1)*cov(X1) + (n2-1)*cov(X2)) / (n1+n2-2)
 Sinv   <- solve(S)
 
 estadisticF <- factor * (t(mu_diff) %*% Sinv %*% mu_diff)
