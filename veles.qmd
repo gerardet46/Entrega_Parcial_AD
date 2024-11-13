@@ -1,5 +1,5 @@
 ---
-title: "títol entrega"
+title: "Oferta, preus i característiques de les veles de Windsurf"
 subtitle: "Anàlisi de Dades. Repàs 1er parcial"
 author: "Gerard Ribas Acebes"
 date: today
@@ -20,7 +20,7 @@ library(Hotelling)
 library(GGally)
 ```
 
-Enllaç al repositori git: [Enllaç al repositori git](https://github.com/gerardet46/Entrega_Parcial_AD/).
+[Enllaç al repositori git](https://github.com/gerardet46/Entrega_Parcial_AD/).
 
 # Resum
 
@@ -149,7 +149,8 @@ En ambdós casos les probabilitats són molt properes. En conclusió, els windsu
 ### Regressió múltiple per explicar el preu
 A continuació veurem si se pot explicar el preu a partir de la superfície, el gràtil i la botavara amb un model de regressió múltiple. Això pot ser d'utilitat per tenir en compte si el preu varia de manera lineal significativament si les dimensions de la vela varien.
 ```{r}
-summary(lm(preu ~ m2+gratil+botavara, data = veles))
+model <- summary(lm(preu ~ m2+gratil+botavara, data = veles))
+model
 ```
 Notem que hem obtingut coeficients que no són significatius. En particular, la superfície és la que té el p-valor més alt (i per tant no és significatiu per explicar el preu). Per tant, eliminem la superfície i tornem a construir el model.
 
@@ -173,7 +174,24 @@ ggplot(data_lm, aes(x=botavara, y=preu)) +
   geom_smooth(method=lm , color="red", se=FALSE)
 ```
 
-### TODO. Calcular funció d'score.
+Ara, calculem la funció d'score al model. Ho farem al primer model considerat, és a dir, el preu en funció de les tres dimensions. Sabem que la funció d'score del model de regressió múltiple és
+
+$$Score(\beta) = \frac{1}{\sigma^2}X^T (Y-X \beta)$$
+
+on $X$ és una columna de uns seguit de les columnes de les tres dimensions, $\beta$ és el vector dels coeficients del model (començant per l'intercepte) i $Y$ és la variable que volem explicar, és a dir, el preu. A més, $\sigma^2$ és la variança de la variable aleatòria $\varepsilon$ que proporciona l'error. L'estimador de màxima versemblança de $\sigma^2$ és la variança dels residuals del model. Aleshores, implementem la funció d'score i calculem-la en aquest cas.
+```{r}
+score <- function(X, Y, beta, sigma2) {
+  return(t(X) %*% (Y-X%*%beta)) / sigma2
+}
+
+X      <- as.matrix(cbind(1, veles[,1:3]))
+Y      <- as.matrix(veles %>% dplyr::select(preu))
+beta   <- model$coefficients[,1]
+sigma2 <- model$sigma ^ 2
+score(X, Y, beta, sigma2)
+```
+
+Notem que les components de l'score són molt properes a zero, és a dir, el model ha aconseguit arribar a pràcticament el màxim de versemblança. Per tant, aquests coeficients maximitzen la probabilitat d'haver observat les dades del preus en terme de les tres dimensions. Emperò, recordem que hem obtingut que hi ha coeficients que no són significatius i, per tant, el model de regressió lineal no és adequat per explicar el preu.
 
 ### Contrast d'hipòtesi de dues mitjanes multivariants (en funció del material de fabricació)
 En aquesta secció estudiarem si hi ha diferències significatives en les mitjanes del preu i les dimensions en funció del material de fabricació.
@@ -212,6 +230,7 @@ Comprovem que ens dona el mateix resultat que el test implementat en R amb la fu
 ```{r}
 fit <- hotelling.test(X1, X2, var.equal = T)
 fit
+
 ```
 Aleshores, amb un nivell de significació $\alpha=0.05$, no podem rebutjar que les mitjanes de preu i de dimensions entre els diferents materials siguin iguals.
 
