@@ -1,0 +1,9 @@
+* Oferta, preus i característiques de les veles de Windsurf
+*Autor:* Gerard Ribas Acebes
+
+Aquest repositori conté els fitxers del taller avaluable de repàs per al primer parcial.
+
+El resultat obtingut es troba a l'informe =veles.html=, el qual s'ha escrit tot el contingut al document =veles.qmd=. La imatge =windsurf.jpg= forma part de l'informe, i està integrada a /veles.html/.
+
+** Resum
+L'objectiu del treball és estudiar l'oferta de diferents tipus de veles de windsurf en el mercat, així com relacionar les seves especificacions amb el preu final de la vela. Per això, es simularà una mostra aleatòria i s'utilitzaran tècniques d'anàlisi inferencial (com regressió múltiple i contrasts de mitjanes) per donar resposta a quines característiques s'han de tenir en compte a l'hora de comprar una vela en termes de preu i del tipus de navegació. Aquesta anàlisi és important, idò les veles són molt cares i tenen moltes característiques diferents que donaran lloc a millor rendiment i durabilitat en funció del nivell del windsurfista i les condicions de vent. Per tant, és una decisió que involucra una compra relativament alta (tenint en compte que només s'estudia la vela, però és necessita més material: taula, botavara, ...) i és millor pensar-s'ho dues vegades abans de comprar nou material.

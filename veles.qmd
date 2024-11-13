@@ -5,7 +5,7 @@ author: "Gerard Ribas Acebes"
 date: today
 format:
   html:
-    theme: darkly #lumen
+    theme: lumen
     toc: true
     toc-depth: 3
     embed-resources: true
